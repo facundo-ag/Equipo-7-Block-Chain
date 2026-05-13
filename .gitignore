@@ -1,0 +1,9 @@
+node_modules/
+build/
+.env
+.DS_Store
+*.log
+coverage/
+frontend_repo/node_modules/
+frontend_repo/dist/
+frontend_repo/build/
