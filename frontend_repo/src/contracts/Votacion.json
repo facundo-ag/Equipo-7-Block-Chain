@@ -49,7 +49,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -68,7 +69,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -97,7 +99,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -116,7 +119,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -174,7 +178,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -187,7 +192,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     }
   ],
   "metadata": "{\"compiler\":{\"version\":\"0.8.35+commit.47b9dedd\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"votante\",\"type\":\"address\"}],\"name\":\"VotanteHabilitado\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"votante\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"opcionId\",\"type\":\"uint256\"}],\"name\":\"VotoEmitido\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"admin\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"nombre\",\"type\":\"string\"}],\"name\":\"agregarOpcion\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"opcionId\",\"type\":\"uint256\"}],\"name\":\"consultarRecuentoVotos\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"opcionId\",\"type\":\"uint256\"}],\"name\":\"emitirVoto\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"haVotado\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_votante\",\"type\":\"address\"}],\"name\":\"habilitarVotante\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"opciones\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"nombre\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"votos\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"padronElectoral\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalOpciones\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/Votacion.sol\":\"Votacion\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/Votacion.sol\":{\"keccak256\":\"0x04dad922a81817c5ae8c0b81c4f3c33f2e8fe5354bd36afc02230c37dacb35b9\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://21f7fbbe215f3223a3eba577e2b2ced99e58a98aa67cd459bca8b8562f0669b9\",\"dweb:/ipfs/QmXCGtEqMZvDgpUjLWZWTFpRAKRxPH1DqyYouYqZwbDsWA\"]}},\"version\":1}",
@@ -9464,9 +9470,17 @@
     "name": "solc",
     "version": "0.8.35+commit.47b9dedd.Emscripten.clang"
   },
-  "networks": {},
+  "networks": {
+    "1778853200444": {
+      "events": {},
+      "links": {},
+      "address": "0x070b2cbb28E5F470EF0B2AF0D358008F9437b2Ff",
+      "transactionHash": "0x20636efe0b4d83cf754b7c012b4c7ca74de742382ac53cfb00b623388b8df7da"
+    }
+  },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2026-05-13T17:07:57.280Z",
+  "updatedAt": "2026-05-15T14:02:16.791Z",
+  "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
     "methods": {},

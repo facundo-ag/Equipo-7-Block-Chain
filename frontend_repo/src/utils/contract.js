@@ -1,8 +1,7 @@
 import { ethers } from "ethers";
 import VotacionABI from "../contracts/Votacion.json";
 
-// TODO: Replace with the deployed contract address from Truffle after migration
-export const CONTRACT_ADDRESS = "0x5818Df60c3cAa3133a2a8087F41bCBFF7BAa362c";
+export const CONTRACT_ADDRESS = "0x070b2cbb28E5F470EF0B2AF0D358008F9437b2Ff";
 
 export const getContract = (providerOrSigner) => {
   return new ethers.Contract(CONTRACT_ADDRESS, VotacionABI.abi, providerOrSigner);
