@@ -69,7 +69,7 @@ module.exports = {
     //
     development: {
      host: "127.0.0.1",     // Localhost (default: none)
-     port: 8545,            // Ganache CLI port for console use
+     port: 8546,            // Ganache CLI port for console use
       network_id: "*",       // Any network (default: none)
     },
     //

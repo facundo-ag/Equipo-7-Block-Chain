@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import fs from "fs";
 
 async function main() {
-    const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+    const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
     const signer = await provider.getSigner(0); // First Ganache account
 
     const artifactRaw = fs.readFileSync("./src/contracts/Votacion.json", "utf8");

