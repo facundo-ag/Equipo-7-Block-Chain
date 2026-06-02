@@ -2,7 +2,7 @@ const Votacion = artifacts.require("Votacion");
 
 module.exports = async function(callback) {
   try {
-    const userAddress = "0x10de37dd9562D9035CDD83134594eF706CA60D24";
+    const userAddress = "0x10de37dd9562d9035edd83134594ef706ea60d24";
     const balance = await web3.eth.getBalance(userAddress);
     console.log("Balance of", userAddress, "on local RPC:", web3.utils.fromWei(balance, "ether"), "ETH");
 

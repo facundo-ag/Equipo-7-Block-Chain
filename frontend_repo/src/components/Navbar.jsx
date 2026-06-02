@@ -65,8 +65,8 @@ function Navbar() {
               <span style={{ fontSize: "12px", color: "#93c5fd", display: "block" }}>DNI: {user.dni}</span>
             </span>
 
-            {/* Si es el admin de la blockchain (Cuenta 0) u otra cuenta logueada, mostrar botón Admin forzado */}
-            {location.pathname !== "/admin" && (
+            {/* Mostrar botón Admin solo si el usuario es administrador habilitado */}
+            {isAdmin && location.pathname !== "/admin" && (
               <button 
                 style={{...btnStyle, backgroundColor: "#1e3a8a", border: "1px solid #3b82f6"}} 
                 onClick={() => navigate("/admin")}
@@ -80,7 +80,7 @@ function Navbar() {
                 style={{...btnStyle, backgroundColor: "#10b981"}} 
                 onClick={() => navigate("/voting")}
               >
-                Elecciones
+                Cuarto Oscuro
               </button>
             )}
 

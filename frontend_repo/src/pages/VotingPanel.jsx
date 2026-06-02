@@ -10,12 +10,7 @@ function VotingPanel() {
   const [esElegibleBlockchain, setEsElegibleBlockchain] = useState(true);
   const [cargandoElegibilidad, setCargandoElegibilidad] = useState(false);
 
-  // Estados de Elecciones
-  const [elecciones, setElecciones] = useState([]);
-  const [eleccionSeleccionada, setEleccionSeleccionada] = useState("");
-  const [cargandoElecciones, setCargandoElecciones] = useState(false);
-
-  // Estados de Candidatos para la Elección Seleccionada
+  // Estados de Candidatos para la Votación Activa
   const [candidatos, setCandidatos] = useState([]);
   const [cargandoCandidatos, setCargandoCandidatos] = useState(false);
   const [haVotado, setHaVotado] = useState(false);
@@ -48,94 +43,50 @@ function VotingPanel() {
     }
   }, [account, ciudadano]);
 
-  // 3. Cargar elecciones disponibles en la Blockchain
+  // 3. Cargar candidatos y verificar estado de voto desde la Blockchain
   useEffect(() => {
-    const cargarElecciones = async () => {
-      if (provider) {
-        setCargandoElecciones(true);
-        setErrorInfo("");
-        try {
-          const contract = getContract(provider);
-          const total = await contract.totalElecciones();
-          const count = Number(total);
-          
-          let arrElecciones = [];
-          for (let i = 0; i < count; i++) {
-            const ele = await contract.elecciones(i);
-            arrElecciones.push({
-              id: Number(ele.id),
-              nombre: ele.nombre,
-              activa: ele.activa
-            });
-          }
-          // Filtrar solo las elecciones activas para el votante
-          setElecciones(arrElecciones.filter(e => e.activa));
-          
-          // Preseleccionar la primera si hay disponibles
-          const activas = arrElecciones.filter(e => e.activa);
-          if (activas.length > 0) {
-            setEleccionSeleccionada(activas[0].id.toString());
-          }
-        } catch (e) {
-          console.error("Error al cargar elecciones:", e);
-          setErrorInfo("No se pudieron cargar las elecciones activas de la blockchain.");
-        } finally {
-          setCargandoElecciones(false);
+    const cargarCandidatosYVoto = async () => {
+      if (!provider) return;
+      setCargandoCandidatos(true);
+      setErrorInfo("");
+      setExitoInfo("");
+      try {
+        const contract = getContract(provider);
+        
+        // 1. Obtener candidatos globales
+        const total = await contract.totalCandidatos();
+        const count = Number(total);
+        
+        let arrCandidatos = [];
+        for (let i = 0; i < count; i++) {
+          const cand = await contract.candidatos(i);
+          arrCandidatos.push({
+            id: Number(cand.id),
+            nombre: cand.nombre,
+            votos: Number(cand.votos)
+          });
         }
+        setCandidatos(arrCandidatos);
+
+        // 2. Verificar si el usuario ya votó
+        if (account) {
+          const votado = await contract.haVotado(account);
+          setHaVotado(votado);
+        } else {
+          setHaVotado(false);
+        }
+      } catch (e) {
+        console.error("Error al cargar datos de candidatos/votos:", e);
+        setErrorInfo("Error al consultar el estado de la votación en la blockchain.");
+      } finally {
+        setCargandoCandidatos(false);
       }
     };
-    cargarElecciones();
-  }, [provider]);
 
-  // 4. Cargar candidatos y estado de sufragio cuando cambia la elección seleccionada o la cuenta
-  useEffect(() => {
-    if (eleccionSeleccionada !== "") {
-      cargarCandidatosYVoto(Number(eleccionSeleccionada));
-    } else {
-      setCandidatos([]);
-      setHaVotado(false);
-    }
-  }, [eleccionSeleccionada, account, provider]);
+    cargarCandidatosYVoto();
+  }, [provider, account]);
 
-  // --- FUNCIONES AUXILIARES ---
-
-  const cargarCandidatosYVoto = async (eleccionId) => {
-    if (!provider) return;
-    setCargandoCandidatos(true);
-    setErrorInfo("");
-    setExitoInfo("");
-    try {
-      const contract = getContract(provider);
-      
-      // 1. Obtener candidatos de la elección específica
-      const totalCands = await contract.totalCandidatos(eleccionId);
-      const count = Number(totalCands);
-      
-      let arrCandidatos = [];
-      for (let i = 0; i < count; i++) {
-        const cand = await contract.candidatosPorEleccion(eleccionId, i);
-        arrCandidatos.push({
-          id: Number(cand.id),
-          nombre: cand.nombre,
-          votos: Number(cand.votos)
-        });
-      }
-      setCandidatos(arrCandidatos);
-
-      // 2. Verificar si el usuario ya votó en esta elección
-      if (account) {
-        const votado = await contract.haVotadoEnEleccion(eleccionId, account);
-        setHaVotado(votado);
-      } else {
-        setHaVotado(false);
-      }
-    } catch (e) {
-      console.error("Error al cargar datos de candidatos/votos:", e);
-      setErrorInfo("Error al consultar el estado de esta elección en la blockchain.");
-    } finally {
-      setCargandoCandidatos(false);
-    }
-  };
+  // --- EMISIÓN DE VOTO ---
 
   const handleEmitirVoto = async (candidatoId) => {
     if (!signer) return alert("Por favor, conecte su wallet MetaMask para continuar.");
@@ -156,10 +107,9 @@ function VotingPanel() {
 
     try {
       const contract = getContract(signer);
-      const eleId = Number(eleccionSeleccionada);
       
       // Emitir transacción en la Blockchain
-      const tx = await contract.emitirVoto(eleId, candidatoId, { gasLimit: 3000000 });
+      const tx = await contract.emitirVoto(candidatoId, { gasLimit: 3000000 });
       
       setExitoInfo("Transacción enviada. Esperando confirmación del bloque...");
       
@@ -168,8 +118,21 @@ function VotingPanel() {
       setExitoInfo("¡Voto registrado y auditado correctamente en la Blockchain de Ethereum!");
       alert("¡Su voto se ha emitido con éxito! Gracias por cumplir con su deber cívico.");
       
-      // Actualizar interfaz
-      await cargarCandidatosYVoto(eleId);
+      // Recargar candidatos y voto actualizado
+      const total = await contract.totalCandidatos();
+      const count = Number(total);
+      
+      let arrCandidatos = [];
+      for (let i = 0; i < count; i++) {
+        const cand = await contract.candidatos(i);
+        arrCandidatos.push({
+          id: Number(cand.id),
+          nombre: cand.nombre,
+          votos: Number(cand.votos)
+        });
+      }
+      setCandidatos(arrCandidatos);
+      setHaVotado(true);
     } catch (err) {
       console.error("Error al emitir voto:", err);
       const msg = err.message?.toLowerCase();
@@ -277,113 +240,80 @@ function VotingPanel() {
       {exitoInfo && <div style={successAlertStyle}>{exitoInfo}</div>}
       {errorInfo && <div style={errorAlertStyle}>{errorInfo}</div>}
 
-      {/* SECTOR DE SELECCIÓN DE ELECCIÓN */}
-      <div style={selectionCardStyle}>
-        <label style={{ ...labelStyle, fontSize: "14px", marginBottom: "10px", display: "block" }}>
-          SELECCIONE LA ELECCIÓN DONDE DESEA EMITIR SU VOTO
-        </label>
-        
-        {cargandoElecciones ? (
-          <p style={{ color: "#64748b" }}>Consultando elecciones activas...</p>
-        ) : elecciones.length === 0 ? (
-          <div style={{ padding: "20px", textAlign: "center", backgroundColor: "#f8fafc", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
-            <p style={{ color: "#64748b", fontWeight: "bold" }}>No se encuentran elecciones activas registradas en la blockchain en este momento.</p>
-          </div>
-        ) : (
-          <select
-            value={eleccionSeleccionada}
-            onChange={(e) => setEleccionSeleccionada(e.target.value)}
-            style={selectStyle}
-          >
-            {elecciones.map((ele) => (
-              <option key={ele.id} value={ele.id}>
-                {ele.nombre} (ID: #{ele.id})
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
       {/* CUARTO OSCURO / GRID DE CANDIDATOS */}
-      {eleccionSeleccionada !== "" && (
-        <div style={{ marginTop: "40px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "2px solid #e2e8f0", paddingBottom: "10px" }}>
+      <div style={{ marginTop: "40px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "2px solid #e2e8f0", paddingBottom: "10px", flexWrap: "wrap", gap: "15px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "15px", flexWrap: "wrap" }}>
             <h2 style={{ color: "#0f2c59", fontWeight: "800", margin: 0 }}>
-              Candidatos Oficiales de la Elección
+              Postulantes Oficiales
             </h2>
-            {haVotado && (
-              <span style={{
-                backgroundColor: "#d1fae5",
-                color: "#065f46",
-                padding: "6px 12px",
-                borderRadius: "8px",
-                fontSize: "13px",
-                fontWeight: "bold",
-                border: "1px solid #a7f3d0"
-              }}>
-                ✓ USTED YA HA SUFRAGADO EN ESTA ELECCIÓN
-              </span>
-            )}
           </div>
-
-          {cargandoCandidatos ? (
-            <p style={{ textAlign: "center", color: "#64748b", margin: "40px 0" }}>Consultando candidatos en el contrato inteligente...</p>
-          ) : candidatos.length === 0 ? (
-            <p style={{ color: "#64748b", textAlign: "center", margin: "40px 0" }}>
-              Esta elección no cuenta con postulantes habilitados por el administrador en la blockchain aún.
-            </p>
-          ) : (
-            <div style={candidatesGridStyle}>
-              {candidatos.map((cand) => (
-                <div key={cand.id} style={{
-                  ...candidateCardStyle,
-                  borderColor: haVotado ? "#d1fae5" : "#e2e8f0"
-                }}>
-                  <div style={candidateBadgeStyle}>LISTA #{cand.id + 1}</div>
-                  
-                  <h3 style={{ color: "#0f2c59", fontSize: "20px", fontWeight: "800", margin: "15px 0 5px 0" }}>
-                    {cand.nombre}
-                  </h3>
-                  
-                  <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "20px" }}>
-                    Postulante de Elección
-                  </p>
-
-                  <div style={votesBoxStyle}>
-                    <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "bold" }}>
-                      Votos Auditados
-                    </span>
-                    <strong style={{ fontSize: "24px", color: "#1d4ed8" }}>{cand.votos}</strong>
-                  </div>
-
-                  <button
-                    disabled={procesandoVoto !== null || haVotado || !esElegibleBlockchain}
-                    onClick={() => handleEmitirVoto(cand.id)}
-                    style={{
-                      ...voteButtonStyle,
-                      backgroundColor: haVotado 
-                        ? "#10b981" 
-                        : !esElegibleBlockchain 
-                          ? "#cbd5e1" 
-                          : "#1d4ed8",
-                      cursor: (procesandoVoto !== null || haVotado || !esElegibleBlockchain) ? "not-allowed" : "pointer",
-                      opacity: (procesandoVoto !== null) ? 0.7 : 1
-                    }}
-                  >
-                    {procesandoVoto === cand.id 
-                      ? "Firmando Voto..." 
-                      : haVotado 
-                        ? "✓ Voto Registrado" 
-                        : !esElegibleBlockchain 
-                          ? "Padrón no verificado" 
-                          : "Emitir Voto"}
-                  </button>
-                </div>
-              ))}
-            </div>
+          {haVotado && (
+            <span style={{
+              backgroundColor: "#d1fae5",
+              color: "#065f46",
+              padding: "6px 12px",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: "bold",
+              border: "1px solid #a7f3d0"
+            }}>
+              ✓ USTED YA HA EMITIDO SU VOTO
+            </span>
           )}
         </div>
-      )}
+
+        {cargandoCandidatos ? (
+          <p style={{ textAlign: "center", color: "#64748b", margin: "40px 0" }}>Consultando candidatos en el contrato inteligente...</p>
+        ) : candidatos.length === 0 ? (
+          <p style={{ color: "#64748b", textAlign: "center", margin: "40px 0" }}>
+            No se encuentran postulantes registrados en la blockchain aún.
+          </p>
+        ) : (
+          <div style={candidatesGridStyle}>
+            {candidatos.map((cand) => (
+              <div key={cand.id} style={{
+                ...candidateCardStyle,
+                borderColor: haVotado ? "#d1fae5" : "#e2e8f0"
+              }}>
+                <div style={candidateBadgeStyle}>LISTA #{cand.id + 1}</div>
+                
+                <h3 style={{ color: "#0f2c59", fontSize: "20px", fontWeight: "800", margin: "15px 0 5px 0" }}>
+                  {cand.nombre}
+                </h3>
+                
+                <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "20px" }}>
+                  Postulante Registrado
+                </p>
+
+                <button
+                  disabled={procesandoVoto !== null || haVotado || !esElegibleBlockchain}
+                  onClick={() => handleEmitirVoto(cand.id)}
+                  style={{
+                    ...voteButtonStyle,
+                    backgroundColor: haVotado 
+                      ? "#10b981" 
+                      : !esElegibleBlockchain 
+                        ? "#cbd5e1" 
+                        : "#1d4ed8",
+                    cursor: (procesandoVoto !== null || haVotado || !esElegibleBlockchain) ? "not-allowed" : "pointer",
+                    opacity: (procesandoVoto !== null) ? 0.7 : 1,
+                    marginTop: "20px"
+                  }}
+                >
+                  {procesandoVoto === cand.id 
+                    ? "Firmando Voto..." 
+                    : haVotado 
+                      ? "✓ Voto Registrado" 
+                      : !esElegibleBlockchain 
+                        ? "Padrón no verificado" 
+                        : "Emitir Voto"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* FOOTER DESCENTRALIZADO */}
       <div style={auditFooterStyle}>

@@ -5,6 +5,7 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import AdminPanel from "../pages/AdminPanel";
 import VotingPanel from "../pages/VotingPanel";
+import Recuento from "../pages/Recuento";
 import Navbar from "../components/Navbar";
 
 function AppRouter() {
@@ -17,6 +18,7 @@ function AppRouter() {
         <Route path="/register" element={<Register />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/voting" element={<VotingPanel />} />
+        <Route path="/recuento" element={<Recuento />} />
       </Routes>
     </BrowserRouter>
   );

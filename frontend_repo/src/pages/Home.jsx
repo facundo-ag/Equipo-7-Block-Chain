@@ -8,13 +8,6 @@ function Home() {
   const { account, provider } = useWeb3();
   const [user, setUser] = useState(null);
   
-  // Estadísticas Web3
-  const [stats, setStats] = useState({
-    elecciones: 0,
-    candidatos: 0,
-    cargando: true
-  });
-
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -23,36 +16,6 @@ function Home() {
       setUser(null);
     }
   }, []);
-
-  useEffect(() => {
-    const fetchBlockchainStats = async () => {
-      if (provider) {
-        try {
-          const contract = getContract(provider);
-          const totalElecciones = await contract.totalElecciones();
-          const count = Number(totalElecciones);
-          
-          let totalCandidatosCount = 0;
-          for (let i = 0; i < count; i++) {
-            const candCount = await contract.totalCandidatos(i);
-            totalCandidatosCount += Number(candCount);
-          }
-
-          setStats({
-            elecciones: count,
-            candidatos: totalCandidatosCount,
-            cargando: false
-          });
-        } catch (e) {
-          console.error("Error fetching stats from blockchain:", e);
-          setStats(prev => ({ ...prev, cargando: false }));
-        }
-      } else {
-        setStats(prev => ({ ...prev, cargando: false }));
-      }
-    };
-    fetchBlockchainStats();
-  }, [provider]);
 
   return (
     <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh", fontFamily: "'Outfit', 'Inter', sans-serif" }}>
@@ -109,7 +72,7 @@ function Home() {
             contratos inteligentes y criptografía de vanguardia en Ethereum.
           </p>
 
-          <div style={{ display: "flex", gap: "20px", justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: "20px", justifyContent: "center", flexWrap: "wrap" }}>
             {user ? (
               <>
                 <button 
@@ -122,7 +85,7 @@ function Home() {
                   style={{...secondaryButton, backgroundColor: "transparent", color: "white", border: "2px solid white"}} 
                   onClick={() => navigate("/admin")}
                 >
-                  ⚙️ Administrar Elecciones
+                  ⚙️ Panel Electoral
                 </button>
               </>
             ) : (
@@ -142,54 +105,46 @@ function Home() {
               </>
             )}
           </div>
+
+          <div style={{ marginTop: "25px", display: "flex", justifyContent: "center" }}>
+            <button 
+              style={{
+                ...secondaryButton,
+                backgroundColor: "#ffffff",
+                color: "#0f2c59",
+                border: "2px solid #0f2c59",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+                padding: "12px 28px",
+                fontSize: "15px"
+              }} 
+              onClick={() => navigate("/recuento")}
+            >
+              📊 Ver Recuento de Votos (Escrutinio Público)
+            </button>
+          </div>
         </div>
       </section>
 
       {/* SECCIÓN ESTADÍSTICAS EN TIEMPO REAL */}
-      <section style={{ padding: "50px 20px", maxWidth: "1100px", margin: "-40px auto 40px auto" }}>
+      <section style={{ padding: "50px 20px", maxWidth: "400px", margin: "-40px auto 40px auto" }}>
         <div style={{
           backgroundColor: "white",
           borderRadius: "16px",
-          padding: "30px",
+          padding: "20px 30px",
           boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03)",
           border: "1px solid #e2e8f0",
-          display: "flex",
-          justifyContent: "space-around",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "30px"
+          textAlign: "center"
         }}>
-          <div style={{ textAlign: "center", minWidth: "200px" }}>
-            <span style={{ fontSize: "36px", display: "block" }}>🇦🇷</span>
-            <span style={{ fontSize: "14px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", letterSpacing: "1px" }}>
-              Estado del Sistema
-            </span>
-            <h3 style={{ margin: "5px 0 0 0", color: "#10b981", fontSize: "20px", fontWeight: "800" }}>
-              🟢 ONLINE
-            </h3>
-          </div>
-
-          <div style={{ width: "1px", height: "60px", backgroundColor: "#e2e8f0" }}></div>
-
-          <div style={{ textAlign: "center", minWidth: "200px" }}>
-            <span style={{ fontSize: "14px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", letterSpacing: "1px" }}>
-              Elecciones Activas
-            </span>
-            <h3 style={{ margin: "5px 0 0 0", color: "#0f2c59", fontSize: "32px", fontWeight: "900" }}>
-              {stats.cargando ? "..." : stats.elecciones}
-            </h3>
-          </div>
-
-          <div style={{ width: "1px", height: "60px", backgroundColor: "#e2e8f0" }}></div>
-
-          <div style={{ textAlign: "center", minWidth: "200px" }}>
-            <span style={{ fontSize: "14px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", letterSpacing: "1px" }}>
-              Postulantes Registrados
-            </span>
-            <h3 style={{ margin: "5px 0 0 0", color: "#0f2c59", fontSize: "32px", fontWeight: "900" }}>
-              {stats.cargando ? "..." : stats.candidatos}
-            </h3>
-          </div>
+          <span style={{ fontSize: "36px", display: "block", marginBottom: "10px" }}>🇦🇷</span>
+          <span style={{ fontSize: "14px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", letterSpacing: "1px", display: "block" }}>
+            Estado del Sistema
+          </span>
+          <h3 style={{ margin: "5px 0 0 0", color: "#10b981", fontSize: "20px", fontWeight: "800" }}>
+            🟢 ONLINE
+          </h3>
         </div>
       </section>
 

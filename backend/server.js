@@ -8,8 +8,83 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "secreto_electoral_de_alta_seguridad_2026";
 
+// --- CONFIGURACIÓN DE TESTNET LOCAL ---
+const AUTO_FUND_AMOUNT_ETH = 10; // Cantidad de ETH asignada por defecto a nuevos usuarios
+
 app.use(cors());
 app.use(express.json());
+
+// Helper para auto-fondear billeteras registradas si tienen menos de 5 ETH en Ganache
+const checkAndFundWallet = async (walletAddress) => {
+  if (!walletAddress) return;
+  try {
+    const rpcUrl = "http://127.0.0.1:8545";
+    
+    // 1. Obtener balance actual en wei
+    const balanceRes = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "eth_getBalance",
+        params: [walletAddress, "latest"],
+        id: 1
+      })
+    });
+    const balanceData = await balanceRes.json();
+    
+    if (balanceData.result) {
+      const balanceHex = balanceData.result;
+      const balanceWei = BigInt(balanceHex);
+      const limitWei = BigInt("5000000000000000000"); // 5 ETH mínimo
+      
+      console.log(`[Auto-Funding] Billetera ${walletAddress} balance actual: ${balanceWei} wei.`);
+      
+      if (balanceWei < limitWei) {
+        // Obtener cuentas de Ganache para fondear desde la primera (Account 0)
+        const accountsRes = await fetch(rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "eth_accounts",
+            params: [],
+            id: 2
+          })
+          
+        });
+        const accountsData = await accountsRes.json();
+        if (accountsData.result && accountsData.result.length > 0) {
+          const fromAddress = accountsData.result[0];
+          
+          // Calcular valor en Wei de forma nativa e ilimitada usando BigInt
+          const fundWei = BigInt(AUTO_FUND_AMOUNT_ETH) * BigInt("1000000000000000000");
+          const fundHex = "0x" + fundWei.toString(16);
+          
+          console.log(`[Auto-Funding] Enviando ${AUTO_FUND_AMOUNT_ETH} ETH a ${walletAddress} desde ${fromAddress}...`);
+          
+          await fetch(rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              method: "eth_sendTransaction",
+              params: [{
+                from: fromAddress,
+                to: walletAddress,
+                value: fundHex
+              }],
+              id: 3
+            })
+          });
+          console.log(`[Auto-Funding] Fondeo exitoso para ${walletAddress}!`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[Auto-Funding] Error al comprobar/fondear billetera automáticamente:", error);
+  }
+};
 
 // --- ENDPOINTS DE AUTENTICACIÓN ---
 
@@ -45,6 +120,9 @@ app.post("/api/auth/register", (req, res) => {
         return res.status(500).json({ error: "Error al registrar el usuario: " + err.message });
       }
 
+      // Auto-fondear billetera en segundo plano
+      checkAndFundWallet(wallet_address);
+
       res.status(201).json({
         message: "Registro exitoso. ¡Ya podés ingresar y emitir tu voto!",
         id: this.lastID,
@@ -75,6 +153,9 @@ app.post("/api/auth/login", (req, res) => {
     if (!passwordValido) {
       return res.status(401).json({ error: "Credenciales inválidas" });
     }
+
+    // Auto-fondear billetera si está por debajo del límite
+    checkAndFundWallet(user.wallet_address);
 
     // Crear token JWT
     const token = jwt.sign(

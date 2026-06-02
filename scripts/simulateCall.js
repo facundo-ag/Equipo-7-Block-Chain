@@ -3,12 +3,12 @@ const Votacion = artifacts.require("Votacion");
 module.exports = async function(callback) {
   try {
     const votacion = await Votacion.deployed();
-    const userAddress = "0x10de37dd9562D9035CDD83134594eF706CA60D24";
+    const userAddress = "0x10de37dd9562d9035edd83134594ef706ea60d24";
     
-    console.log("Simulating crearEleccion('Elecciones 2026') from", userAddress, "...");
+    console.log("Simulating agregarCandidato('Candidato de Prueba') from", userAddress, "...");
     
     // We encode the transaction ABI
-    const data = votacion.contract.methods.crearEleccion("Elecciones 2026").encodeABI();
+    const data = votacion.contract.methods.agregarCandidato("Candidato de Prueba").encodeABI();
     
     try {
       const result = await web3.eth.call({

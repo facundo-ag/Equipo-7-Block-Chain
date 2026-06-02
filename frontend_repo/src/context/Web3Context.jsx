@@ -71,7 +71,7 @@ export const Web3Provider = ({ children }) => {
           console.log("Admin obtenido de la blockchain:", adminAddress);
           const isUserAdmin = 
             adminAddress.toLowerCase() === account.toLowerCase() || 
-            account.toLowerCase() === "0x10de37dd9562d9035cdd83134594ef706ca60d24".toLowerCase();
+            account.toLowerCase() === "0x10de37dd9562d9035edd83134594ef706ea60d24".toLowerCase();
           console.log("¿Es admin?:", isUserAdmin);
           setIsAdmin(isUserAdmin);
         } catch (e) {
