@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useWeb3 } from "../context/Web3Context";
 import { getContract } from "../utils/contract";
+import {
+  parseCandidato,
+  serializeCandidato,
+  PRESET_AVATARS,
+  PRESET_COLORS
+} from "../utils/candidateHelper";
 
 function AdminPanel() {
   const { account, signer, provider, isAdmin } = useWeb3();
@@ -9,7 +15,11 @@ function AdminPanel() {
   const [activeTab, setActiveTab] = useState("candidatos"); // "candidatos", "auditoria", "padron"
 
   // Estado para la Pestaña de Candidatos (Web3)
-  const [nombreNuevoCandidato, setNombreNuevoCandidato] = useState("");
+  const [nombreCandidato, setNombreCandidato] = useState("");
+  const [apellidoCandidato, setApellidoCandidato] = useState("");
+  const [partidoCandidato, setPartidoCandidato] = useState("");
+  const [colorCandidato, setColorCandidato] = useState("#1d4ed8");
+  const [fotoCandidato, setFotoCandidato] = useState("");
   const [candidatos, setCandidatos] = useState([]);
   const [cargandoCandidatos, setCargandoCandidatos] = useState(false);
 
@@ -62,11 +72,7 @@ function AdminPanel() {
       const listaCandidatos = [];
       for (let i = 0; i < count; i++) {
         const cand = await contract.candidatos(i);
-        listaCandidatos.push({
-          id: Number(cand.id),
-          nombre: cand.nombre,
-          votos: Number(cand.votos)
-        });
+        listaCandidatos.push(parseCandidato(cand));
       }
       
       setCandidatos(listaCandidatos);
@@ -80,16 +86,29 @@ function AdminPanel() {
   // Agregar candidato a la Votación en la Blockchain
   const handleAgregarCandidato = async (e) => {
     e.preventDefault();
-    if (!nombreNuevoCandidato.trim()) return alert("Debe ingresar el nombre del postulante.");
+    if (!nombreCandidato.trim()) return alert("Debe ingresar el nombre del postulante.");
+    if (!apellidoCandidato.trim()) return alert("Debe ingresar el apellido del postulante.");
+    if (!partidoCandidato.trim()) return alert("Debe ingresar el partido político del postulante.");
     if (!signer) return alert("Conecte MetaMask.");
 
     try {
       const contract = getContract(signer);
-      const tx = await contract.agregarCandidato(nombreNuevoCandidato.trim(), { gasLimit: 3000000 });
+      const serialized = serializeCandidato({
+        nombre: nombreCandidato,
+        apellido: apellidoCandidato,
+        partido: partidoCandidato,
+        color: colorCandidato,
+        foto: fotoCandidato
+      });
+      const tx = await contract.agregarCandidato(serialized, { gasLimit: 3000000 });
       await tx.wait();
       
       alert("¡Candidato agregado exitosamente a la votación en la Blockchain!");
-      setNombreNuevoCandidato("");
+      setNombreCandidato("");
+      setApellidoCandidato("");
+      setPartidoCandidato("");
+      setColorCandidato("#1d4ed8");
+      setFotoCandidato("");
       fetchCandidatosBlockchain();
     } catch (err) {
       console.error(err);
@@ -110,7 +129,8 @@ function AdminPanel() {
       const candidatosMap = {};
       for (let i = 0; i < countCand; i++) {
         const cand = await contract.candidatos(i);
-        candidatosMap[i.toString()] = cand.nombre;
+        const parsed = parseCandidato(cand);
+        candidatosMap[i.toString()] = `${parsed.nombre} ${parsed.apellido} (${parsed.partido})`;
       }
 
       // 2. Fetch VotoEmitido events
@@ -250,18 +270,154 @@ function AdminPanel() {
         <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
           
           {/* Lado Izquierdo: Agregar Candidato */}
-          <div style={{ flex: "1 1 350px" }}>
+          <div style={{ flex: "1 1 400px" }}>
             <div style={cardStyle}>
               <h3 style={{ color: "#0f2c59", margin: "0 0 15px 0", fontWeight: "800" }}>Agregar Candidato Oficial</h3>
               <form onSubmit={handleAgregarCandidato} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-                <input
-                  type="text"
-                  placeholder="Nombre completo del candidato"
-                  value={nombreNuevoCandidato}
-                  onChange={(e) => setNombreNuevoCandidato(e.target.value)}
-                  style={inputStyle}
-                  required
-                />
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: "12px", fontWeight: "bold", color: "#64748b", marginBottom: "5px", display: "block" }}>Nombre</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Juan"
+                      value={nombreCandidato}
+                      onChange={(e) => setNombreCandidato(e.target.value)}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: "12px", fontWeight: "bold", color: "#64748b", marginBottom: "5px", display: "block" }}>Apellido</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Pérez"
+                      value={apellidoCandidato}
+                      onChange={(e) => setApellidoCandidato(e.target.value)}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold", color: "#64748b", marginBottom: "5px", display: "block" }}>Partido Político</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Frente Cívico Nacional"
+                    value={partidoCandidato}
+                    onChange={(e) => setPartidoCandidato(e.target.value)}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold", color: "#64748b", marginBottom: "5px", display: "block" }}>Color de Partido</label>
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <input
+                      type="color"
+                      value={colorCandidato}
+                      onChange={(e) => setColorCandidato(e.target.value)}
+                      style={{
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        width: "45px",
+                        height: "45px",
+                        padding: 0,
+                        cursor: "pointer",
+                        backgroundColor: "transparent"
+                      }}
+                    />
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", flex: 1 }}>
+                      {PRESET_COLORS.map((pc) => (
+                        <button
+                          key={pc.hex}
+                          type="button"
+                          onClick={() => setColorCandidato(pc.hex)}
+                          title={pc.label}
+                          style={{
+                            width: "24px",
+                            height: "24px",
+                            borderRadius: "50%",
+                            backgroundColor: pc.hex,
+                            border: colorCandidato === pc.hex ? "3px solid #0f2c59" : "1px solid rgba(0,0,0,0.15)",
+                            cursor: "pointer",
+                            padding: 0,
+                            boxShadow: colorCandidato === pc.hex ? "0 0 5px rgba(0,0,0,0.3)" : "none",
+                            transition: "all 0.15s ease"
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold", color: "#64748b", marginBottom: "5px", display: "block" }}>Foto del Candidato (URL)</label>
+                  <input
+                    type="url"
+                    placeholder="https://ejemplo.com/foto.jpg"
+                    value={fotoCandidato}
+                    onChange={(e) => setFotoCandidato(e.target.value)}
+                    style={inputStyle}
+                  />
+                  <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginTop: "4px" }}>
+                    Dejar vacío para generar un avatar con iniciales dinámicas y color de partido.
+                  </span>
+                  
+                  {/* Avatares preestablecidos */}
+                  <div style={{ marginTop: "10px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: "bold", color: "#64748b", display: "block", marginBottom: "6px" }}>
+                      O elegir foto rápida de muestra:
+                    </span>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      {PRESET_AVATARS.map((av) => (
+                        <button
+                          key={av.id}
+                          type="button"
+                          onClick={() => setFotoCandidato(av.url)}
+                          style={{
+                            padding: "3px",
+                            borderRadius: "10px",
+                            border: fotoCandidato === av.url ? `3px solid ${colorCandidato}` : "2px solid #e2e8f0",
+                            backgroundColor: "white",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxSizing: "border-box",
+                            transition: "all 0.15s ease"
+                          }}
+                        >
+                          <img 
+                            src={av.url} 
+                            alt={av.label} 
+                            style={{ width: "38px", height: "38px", borderRadius: "8px", objectFit: "cover" }} 
+                          />
+                        </button>
+                      ))}
+                      {fotoCandidato && (
+                        <button
+                          type="button"
+                          onClick={() => setFotoCandidato("")}
+                          style={{
+                            padding: "6px 10px",
+                            borderRadius: "8px",
+                            border: "1px solid #cbd5e1",
+                            backgroundColor: "#f8fafc",
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                            color: "#64748b",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Borrar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <button type="submit" style={actionButtonStyle}>Registrar Candidato</button>
               </form>
             </div>
@@ -276,32 +432,61 @@ function AdminPanel() {
               ) : candidatos.length === 0 ? (
                 <p style={{ color: "#64748b" }}>No hay candidatos registrados en la blockchain aún.</p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {candidatos.map((cand) => (
                     <div
                       key={cand.id}
                       style={{
-                        padding: "15px",
-                        borderRadius: "10px",
-                        border: "1px solid #cbd5e1",
+                        padding: "12px 15px",
+                        borderRadius: "12px",
+                        border: `1.5px solid #cbd5e1`,
+                        borderLeft: `6px solid ${cand.color}`,
                         backgroundColor: "white",
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "center"
+                        alignItems: "center",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+                        transition: "all 0.2s ease"
                       }}
                     >
-                      <div>
-                        <strong style={{ color: "#0f2c59", fontSize: "16px" }}>{cand.nombre}</strong>
-                        <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>ID de Candidato: {cand.id}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <img 
+                          src={cand.foto} 
+                          alt={cand.nombre} 
+                          style={{ 
+                            width: "48px", 
+                            height: "48px", 
+                            borderRadius: "50%", 
+                            objectFit: "cover",
+                            border: `2px solid ${cand.color}`,
+                            backgroundColor: "#f1f5f9"
+                          }} 
+                        />
+                        <div>
+                          <strong style={{ color: "#0f2c59", fontSize: "16px" }}>{cand.nombre} {cand.apellido}</strong>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
+                            <span style={{ 
+                              fontSize: "11px", 
+                              backgroundColor: `${cand.color}15`, 
+                              color: cand.color, 
+                              padding: "2px 8px", 
+                              borderRadius: "4px",
+                              fontWeight: "bold"
+                            }}>
+                              {cand.partido}
+                            </span>
+                            <span style={{ fontSize: "11px", color: "#94a3b8" }}>ID: {cand.id}</span>
+                          </div>
+                        </div>
                       </div>
                       <span style={{
                         padding: "6px 12px",
                         borderRadius: "8px",
                         fontSize: "13px",
                         fontWeight: "bold",
-                        backgroundColor: "#eff6ff",
-                        color: "#1d4ed8",
-                        border: "1px solid #bfdbfe"
+                        backgroundColor: `${cand.color}10`,
+                        color: cand.color,
+                        border: `1px solid ${cand.color}30`
                       }}>
                         {cand.votos} {cand.votos === 1 ? "voto" : "votos"}
                       </span>

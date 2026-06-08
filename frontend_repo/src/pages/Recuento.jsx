@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useWeb3 } from "../context/Web3Context";
 import { getContract, CONTRACT_ADDRESS } from "../utils/contract";
 import { useNavigate } from "react-router-dom";
+import { parseCandidato } from "../utils/candidateHelper";
 
 function Recuento() {
   const { account, provider } = useWeb3();
@@ -29,13 +30,9 @@ function Recuento() {
       let sumaVotos = 0;
       for (let i = 0; i < count; i++) {
         const cand = await contract.candidatos(i);
-        const votos = Number(cand.votos);
-        arrCandidatos.push({
-          id: Number(cand.id),
-          nombre: cand.nombre,
-          votos: votos
-        });
-        sumaVotos += votos;
+        const parsed = parseCandidato(cand);
+        arrCandidatos.push(parsed);
+        sumaVotos += parsed.votos;
       }
 
       // Ordenar candidatos por votos (mayor a menor) para un escrutinio más claro
@@ -147,32 +144,58 @@ function Recuento() {
                   key={cand.id} 
                   style={{
                     ...candidateRowStyle,
-                    borderColor: esGanador ? "#34d399" : "#e2e8f0",
-                    boxShadow: esGanador ? "0 4px 14px rgba(52, 211, 153, 0.08)" : "none"
+                    borderColor: esGanador ? "#10b981" : "#cbd5e1",
+                    borderLeft: `6px solid ${cand.color}`,
+                    boxShadow: esGanador ? `0 6px 20px -5px ${cand.color}25` : "none"
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginBottom: "12px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={{
-                        backgroundColor: esGanador ? "#d1fae5" : "#eff6ff",
-                        color: esGanador ? "#065f46" : "#1d4ed8",
-                        padding: "4px 10px",
-                        borderRadius: "6px",
-                        fontSize: "12px",
-                        fontWeight: "bold"
-                      }}>
-                        LISTA #{cand.id + 1}
-                      </span>
-                      <h4 style={{ margin: 0, color: "#0f2c59", fontSize: "18px", fontWeight: "800" }}>
-                        {cand.nombre} {esGanador && "👑"}
-                      </h4>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px", marginBottom: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <img 
+                        src={cand.foto} 
+                        alt={cand.nombre} 
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: `2px solid ${cand.color}`,
+                          backgroundColor: "#f1f5f9"
+                        }}
+                      />
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{
+                            backgroundColor: `${cand.color}15`,
+                            color: cand.color,
+                            padding: "3px 8px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: "bold"
+                          }}>
+                            LISTA #{cand.id + 1}
+                          </span>
+                          <span style={{ 
+                            fontSize: "12px", 
+                            color: cand.color, 
+                            fontWeight: "bold",
+                            letterSpacing: "0.3px",
+                            textTransform: "uppercase" 
+                          }}>
+                            {cand.partido}
+                          </span>
+                        </div>
+                        <h4 style={{ margin: "4px 0 0 0", color: "#0f2c59", fontSize: "19px", fontWeight: "900" }}>
+                          {cand.nombre} {cand.apellido} {esGanador && "👑"}
+                        </h4>
+                      </div>
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                      <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>
-                        {cand.votos} sufragios
+                      <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "600" }}>
+                        {cand.votos} {cand.votos === 1 ? "sufragio" : "sufragios"}
                       </span>
-                      <strong style={{ fontSize: "20px", color: esGanador ? "#059669" : "#1e3a8a", fontWeight: "900" }}>
+                      <strong style={{ fontSize: "22px", color: cand.color, fontWeight: "900" }}>
                         {porcentaje}%
                       </strong>
                     </div>
@@ -183,7 +206,7 @@ function Recuento() {
                     <div style={{
                       ...progressBarFillStyle,
                       width: `${porcentaje}%`,
-                      backgroundColor: esGanador ? "#10b981" : "#1d4ed8"
+                      backgroundColor: cand.color
                     }} />
                   </div>
                 </div>

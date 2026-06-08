@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWeb3 } from "../context/Web3Context";
 import { getContract } from "../utils/contract";
+import { parseCandidato } from "../utils/candidateHelper";
 
 function VotingPanel() {
   const { account, provider, signer } = useWeb3();
@@ -14,6 +15,7 @@ function VotingPanel() {
   const [candidatos, setCandidatos] = useState([]);
   const [cargandoCandidatos, setCargandoCandidatos] = useState(false);
   const [haVotado, setHaVotado] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState(null);
   
   // Estado de Transacción
   const [procesandoVoto, setProcesandoVoto] = useState(null); // ID del candidato procesándose
@@ -60,11 +62,7 @@ function VotingPanel() {
         let arrCandidatos = [];
         for (let i = 0; i < count; i++) {
           const cand = await contract.candidatos(i);
-          arrCandidatos.push({
-            id: Number(cand.id),
-            nombre: cand.nombre,
-            votos: Number(cand.votos)
-          });
+          arrCandidatos.push(parseCandidato(cand));
         }
         setCandidatos(arrCandidatos);
 
@@ -125,11 +123,7 @@ function VotingPanel() {
       let arrCandidatos = [];
       for (let i = 0; i < count; i++) {
         const cand = await contract.candidatos(i);
-        arrCandidatos.push({
-          id: Number(cand.id),
-          nombre: cand.nombre,
-          votos: Number(cand.votos)
-        });
+        arrCandidatos.push(parseCandidato(cand));
       }
       setCandidatos(arrCandidatos);
       setHaVotado(true);
@@ -271,46 +265,117 @@ function VotingPanel() {
           </p>
         ) : (
           <div style={candidatesGridStyle}>
-            {candidatos.map((cand) => (
-              <div key={cand.id} style={{
-                ...candidateCardStyle,
-                borderColor: haVotado ? "#d1fae5" : "#e2e8f0"
-              }}>
-                <div style={candidateBadgeStyle}>LISTA #{cand.id + 1}</div>
-                
-                <h3 style={{ color: "#0f2c59", fontSize: "20px", fontWeight: "800", margin: "15px 0 5px 0" }}>
-                  {cand.nombre}
-                </h3>
-                
-                <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "20px" }}>
-                  Postulante Registrado
-                </p>
-
-                <button
-                  disabled={procesandoVoto !== null || haVotado || !esElegibleBlockchain}
-                  onClick={() => handleEmitirVoto(cand.id)}
+            {candidatos.map((cand) => {
+              const isHovered = hoveredCard === cand.id;
+              const cardColor = cand.color || "#1d4ed8";
+              
+              return (
+                <div 
+                  key={cand.id} 
+                  onMouseEnter={() => setHoveredCard(cand.id)}
+                  onMouseLeave={() => setHoveredCard(null)}
                   style={{
-                    ...voteButtonStyle,
-                    backgroundColor: haVotado 
-                      ? "#10b981" 
-                      : !esElegibleBlockchain 
-                        ? "#cbd5e1" 
-                        : "#1d4ed8",
-                    cursor: (procesandoVoto !== null || haVotado || !esElegibleBlockchain) ? "not-allowed" : "pointer",
-                    opacity: (procesandoVoto !== null) ? 0.7 : 1,
-                    marginTop: "20px"
+                    ...candidateCardStyle,
+                    borderColor: haVotado ? "#d1fae5" : isHovered ? cardColor : "#cbd5e1",
+                    borderTop: `6px solid ${cardColor}`,
+                    boxShadow: isHovered 
+                      ? `0 12px 24px -10px ${cardColor}40, 0 4px 20px -2px ${cardColor}15` 
+                      : "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                    transform: isHovered ? "translateY(-6px)" : "none",
                   }}
                 >
-                  {procesandoVoto === cand.id 
-                    ? "Firmando Voto..." 
-                    : haVotado 
-                      ? "✓ Voto Registrado" 
-                      : !esElegibleBlockchain 
-                        ? "Padrón no verificado" 
-                        : "Emitir Voto"}
-                </button>
-              </div>
-            ))}
+                  <div style={{
+                    ...candidateBadgeStyle,
+                    backgroundColor: `${cardColor}15`,
+                    color: cardColor,
+                    border: `1.5px solid ${cardColor}30`
+                  }}>
+                    LISTA #{cand.id + 1}
+                  </div>
+                  
+                  {/* Foto del Candidato con marco del color de partido */}
+                  <div style={{ display: "flex", justifyContent: "center", marginTop: "15px", marginBottom: "15px" }}>
+                    <div style={{ position: "relative" }}>
+                      <img 
+                        src={cand.foto} 
+                        alt={cand.nombre} 
+                        style={{
+                          width: "110px",
+                          height: "110px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: `3px solid ${cardColor}`,
+                          boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                          backgroundColor: "#f1f5f9"
+                        }}
+                      />
+                      <span style={{
+                        position: "absolute",
+                        bottom: 0,
+                        right: 0,
+                        width: "16px",
+                        height: "16px",
+                        borderRadius: "50%",
+                        backgroundColor: cardColor,
+                        border: "2.5px solid #ffffff",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
+                      }} />
+                    </div>
+                  </div>
+                  
+                  <h3 style={{ color: "#0f2c59", fontSize: "21px", fontWeight: "900", margin: "10px 0 5px 0" }}>
+                    {cand.nombre} {cand.apellido}
+                  </h3>
+                  
+                  <p style={{ 
+                    color: cardColor, 
+                    fontSize: "13px", 
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    margin: "0 0 20px 0",
+                    display: "inline-block",
+                    padding: "3px 10px",
+                    backgroundColor: `${cardColor}08`,
+                    borderRadius: "6px"
+                  }}>
+                    {cand.partido}
+                  </p>
+
+                  <button
+                    disabled={procesandoVoto !== null || haVotado || !esElegibleBlockchain}
+                    onClick={() => handleEmitirVoto(cand.id)}
+                    style={{
+                      ...voteButtonStyle,
+                      backgroundColor: haVotado 
+                        ? "#10b981" 
+                        : !esElegibleBlockchain 
+                          ? "#cbd5e1" 
+                          : isHovered 
+                            ? `${cardColor}dd` 
+                            : cardColor,
+                      cursor: (procesandoVoto !== null || haVotado || !esElegibleBlockchain) ? "not-allowed" : "pointer",
+                      opacity: (procesandoVoto !== null) ? 0.7 : 1,
+                      boxShadow: haVotado 
+                        ? "none" 
+                        : !esElegibleBlockchain 
+                          ? "none" 
+                          : isHovered 
+                            ? `0 6px 15px ${cardColor}40` 
+                            : `0 4px 10px ${cardColor}25`
+                    }}
+                  >
+                    {procesandoVoto === cand.id 
+                      ? "Firmando Voto..." 
+                      : haVotado 
+                        ? "✓ Voto Registrado" 
+                        : !esElegibleBlockchain 
+                          ? "Padrón no verificado" 
+                          : "Emitir Voto"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
