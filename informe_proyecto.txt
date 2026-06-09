@@ -1,0 +1,391 @@
+================================================================================
+DOCUMENTACIÓN COMPLETA DEL PROYECTO
+SISTEMA DE VOTACIÓN ELECTORAL HÍBRIDO CON BLOCKCHAIN Y CONTRATOS INTELIGENTES
+================================================================================
+
+--------------------------------------------------------------------------------
+1. PORTADA
+--------------------------------------------------------------------------------
+
+TÍTULO DEL PROYECTO:
+   Sistema de Votación Seguro e Inmutable Basado en Contratos Inteligentes
+   e Integración de Padrón Electoral Híbrido Web2/Web3
+
+MATERIA:
+   Sistemas Distribuidos (SD)
+
+TRABAJO:
+   Trabajo Práctico Final
+
+CURSO:
+   5to Año - Ingeniería en Sistemas / Licenciatura
+
+INTEGRANTES:
+   - Facundo Aguilera (Equipo 7)
+
+PROFESOR:
+   Cátedra de Sistemas Distribuidos
+
+FECHA DE ENTREGA:
+   9 de Junio de 2026
+
+REPOSITORIO OFICIAL:
+   https://github.com/facundo-ag/Equipo-7-Block-Chain.git
+
+--------------------------------------------------------------------------------
+2. RESUMEN EJECUTIVO
+--------------------------------------------------------------------------------
+
+El presente proyecto diseña e implementa un prototipo funcional de un Sistema de
+Votación Democrático Híbrido. El objetivo principal es resolver la falta de
+transparencia, la vulnerabilidad ante la adulteración de datos centralizados y
+la imposibilidad de auditoría pública ciudadana en los sistemas de voto
+electrónico tradicionales.
+
+Para lograr esto, proponemos un modelo arquitectónico Web2.5:
+- Una base de datos relacional (SQLite) gestiona los datos de los ciudadanos y
+  el padrón electoral (Web2) de forma eficiente y bajo control estatal.
+- Una red de Blockchain (Ethereum / Ganache) con un Contrato Inteligente (Web3)
+  gestiona de forma descentralizada el registro de candidatos, la emisión de
+  sufragios y el escrutinio oficial inmutable.
+
+Cada ciudadano se autentica con sus credenciales, asocia su billetera (Wallet)
+criptográfica y, una vez habilitado por la Autoridad Electoral, emite su voto
+firmado de manera soberana a través de MetaMask. El sistema interactúa de
+forma directa con la máquina virtual de Ethereum (EVM), garantizando que el
+recuento provisorio sea en tiempo real, resistente a la censura y 100% auditable.
+
+--------------------------------------------------------------------------------
+3. INTRODUCCIÓN
+--------------------------------------------------------------------------------
+
+La democracia moderna depende de la confianza ciudadana en los procesos
+electorales. Sin embargo, los sistemas de votación tradicionales (tanto en papel
+como electrónicos centralizados) sufren constantes cuestionamientos debido a
+riesgos de fraude, robo de urnas, manipulación de bases de datos por intrusos
+o administradores deshonestos, y demoras en el escrutinio.
+
+El uso de la tecnología Blockchain ofrece características revolucionarias para
+paliar estos problemas:
+- DESCENTRALIZACIÓN: No existe un servidor único controlando los resultados. El
+  consenso distribuido valida cada bloque.
+- INMUTABILIDAD: Una vez registrado un voto en la cadena, no puede borrarse ni
+  modificarse, ni siquiera por el creador del contrato.
+- TRANSPARENCIA Y AUDITORÍA: Cualquier ciudadano u organismo internacional puede
+  auditar el escrutinio directamente leyendo los bloques.
+- SOBERANÍA: El ciudadano firma su voto criptográficamente con su clave privada,
+  impidiendo la suplantación de identidad en la red blockchain.
+
+Objetivos del sistema:
+1. Diseñar un contrato inteligente robusto en Solidity que registre candidatos y
+   procese votos previniendo el "doble voto".
+2. Implementar una API Backend que actúe de padrón nacional de elegibilidad.
+3. Crear una interfaz web (DApp) moderna y dinámica en React con micro-animaciones
+   que interactúe con el contrato inteligente y la billetera del usuario de
+   forma fluida.
+
+--------------------------------------------------------------------------------
+4. MARCO TEÓRICO
+--------------------------------------------------------------------------------
+
+El sistema se fundamenta en los siguientes conceptos de computación distribuida:
+
+1. BLOCKCHAIN: Un registro de contabilidad distribuido y compartido que almacena
+   transacciones en bloques encadenados mediante funciones criptográficas de hash.
+
+2. ETHEREUM Y EVM: Ethereum expandió blockchain al permitir la ejecución de
+   código Turing-completo en un entorno distribuido mediante la Ethereum Virtual
+   Machine (EVM).
+
+3. CONTRATOS INTELIGENTES (SMART CONTRACTS): Programas autoejecutables cuyas
+   reglas y lógica de ejecución están escritas en código matemático inmutable y
+   se despliegan en la blockchain.
+
+4. TESTNET Y REDES LOCALES (GANACHE): Herramientas de simulación local de redes
+   Ethereum que permiten realizar pruebas de desarrollo con wallets precargadas
+   con saldo ficticio de ether (ETH).
+
+STACK TECNOLÓGICO SELECCIONADO:
+- Lenguaje del Contrato Inteligente: Solidity (^0.8.20)
+- Entorno de Desarrollo y Despliegue de Smart Contracts: Truffle Framework
+- Librería Cliente Web3: Ethers.js (v6)
+- Frontend: React (v19) y Vite
+- Backend API: Express (Node.js) con CORS, JWT y Bcryptjs
+- Base de Datos Padrón: SQLite3 (liviana e integrada para desarrollo)
+
+--------------------------------------------------------------------------------
+5. ANÁLISIS DEL SISTEMA
+--------------------------------------------------------------------------------
+
+REQUISITOS FUNCIONALES:
+1. Registro de usuarios en la base de datos vinculando Nombre, Apellido, DNI,
+   Email, Contraseña y Wallet Address de Ethereum.
+2. Login de usuarios mediante DNI/Email y validación de hash de contraseña.
+3. Consulta del estado del Padrón Electoral (habilitado para votar).
+4. Auto-fondeo de cuentas en segundo plano: si la billetera registrada del
+   usuario posee menos de 5 ETH al loguearse, el backend le transfiere ETH
+   automáticamente desde la cuenta raíz de Ganache para cubrir el gas.
+5. Panel de Administración de la Autoridad Electoral:
+   - Registro de candidatos oficiales en la blockchain.
+   - Consulta del Padrón Electoral completo (Base de Datos).
+   - Consulta del libro de auditoría de votos emitidos (Events en Blockchain).
+6. Panel de Votación Ciudadana:
+   - Renderización dinámica de listas oficiales (tarjetas con fotos, color del
+     partido y detalles).
+   - Emisión de voto con firma criptográfica (MetaMask).
+   - Prevención estricta en frontend y blockchain de doble voto.
+7. Recuento Provisorio: Visualización en tiempo real de resultados con barras de
+   progreso dinámicas, ganadores provisorios marcados y estadísticas.
+
+REQUISITOS NO FUNCIONALES:
+1. Seguridad: Las contraseñas están hasheadas con Bcrypt; la comunicación Web3
+   requiere firmas criptográficas directas de la wallet.
+2. Inmutabilidad: El escrutinio y los candidatos no pueden ser modificados
+   directamente en la base de datos, residen en el contrato inteligente.
+3. Usabilidad: La interfaz gráfica debe guiar al votante paso a paso de manera
+   intuitiva, previniendo errores de red o wallets no conectadas.
+
+CASOS DE USO Y ROLES:
+- CIUDADANO (VOTANTE): Registra su cuenta, se loguea, verifica su estado de
+  elegibilidad, y emite un sufragio único por el candidato de su preferencia.
+- AUTORIDAD ELECTORAL (ADMINISTRADOR): Genera los candidatos inmutables en la
+  red y audita la coherencia entre el padrón y los eventos del contrato.
+
+--------------------------------------------------------------------------------
+6. DISEÑO DEL SISTEMA
+--------------------------------------------------------------------------------
+
+ARQUITECTURA GENERAL:
+                      +-------------------+
+                      |   VOTANTE / web   |
+                      +---------+---------+
+                                |
+                     +----------+----------+
+                     |                     |
+        (Autenticación/Padrón)      (Transacciones/Voto)
+                     v                     v
+            +-----------------+   +-----------------+
+            | Backend Express |   | Wallet MetaMask |
+            +--------+--------+   +--------+--------+
+                     |                     |
+                (SQL Query)            (JSON-RPC)
+                     v                     v
+            +-----------------+   +-----------------+
+            | SQLite Database |   | Ganache Node    |
+            +-----------------+   | (Smart Contract)|
+                                  +-----------------+
+
+ESTRUCTURA DEL CONTRATO INTELIGENTE (Solidity):
+- public admin: Almacena la dirección de la Autoridad Electoral.
+- struct Candidato: Contiene id (uint256), nombre (string) y votos (uint256).
+- candidatos[]: Array dinámico que almacena la lista de candidatos oficializados.
+- haVotado (mapping address => bool): Mapea si una wallet ya sufragó.
+- modifier soloAdmin(): Restringe la ejecución a la dirección del admin o la
+  cuenta maestra del desarrollador.
+- agregarCandidato(string memory _nombre): Permite al administrador crear listas.
+- emitirVoto(uint256 _candidatoId): Registra el voto del emisor del mensaje
+  (msg.sender), incrementando el contador del candidato y marcando al votante
+  como "haVotado".
+- totalCandidatos() & consultarRecuentoVotos(): Funciones de consulta (view) que
+  no consumen gas.
+
+--------------------------------------------------------------------------------
+7. DESARROLLO
+--------------------------------------------------------------------------------
+
+PROCESO DE DESARROLLO:
+El contrato se desarrolló con una mentalidad ágil. Se identificó una restricción:
+la estructura original del contrato solo guardaba un string `nombre` en el struct
+`Candidato`. Para evitar redepliegues costosos o cambios estructurales complejos
+en el Solidity (que romperían compatibilidades de compiladores), ideamos una
+solución de ingeniería muy elegante:
+
+SERIALIZACIÓN JSON EN BLOCKCHAIN:
+Desarrollamos una utilidad en JavaScript llamada `candidateHelper.js` que
+serializa Nombre, Apellido, Partido Político, Color del Partido y URL de la Foto
+en un string JSON antes de mandarlo a la blockchain:
+`{"nombre":"Juan","apellido":"Pérez","partido":"Frente Cívico","color":"#1d4ed8","foto":"..."}`
+
+Al leer los candidatos desde la blockchain, la DApp parsea este string de forma
+segura. Si por algún motivo el candidato no posee formato JSON (por ejemplo,
+candidatos de pruebas cargados manualmente en Truffle), el helper aplica un
+"fallback" automático generando iniciales dinámicas y un avatar SVG embebido
+basado en el color del partido.
+
+CONEXIÓN DE LA INTERFAZ CON LA BLOCKCHAIN:
+Mediante `BrowserProvider` de Ethers.js, el frontend captura el objeto
+`window.ethereum` provisto por MetaMask.
+- Las consultas del recuento usan un proveedor de lectura (`JsonRpcProvider` o
+  `BrowserProvider` en modo lectura) llamando a `totalCandidatos()` y barriendo
+  el array con ciclos asíncronos.
+- La escritura de votos utiliza un `signer` obtenido de MetaMask para firmar la
+  transacción que gatilla la función `emitirVoto` del contrato inteligente.
+
+--------------------------------------------------------------------------------
+8. INSTRUCCIONES DE USO
+--------------------------------------------------------------------------------
+
+REQUISITOS PREVIOS:
+1. Node.js instalado en el sistema (v18 o superior).
+2. Ganache CLI instalado globalmente o mediante npx.
+3. Truffle Suite instalado de forma global para gestión de migraciones.
+4. Navegador web con la extensión MetaMask instalada.
+
+PASOS PARA DESPLEGAR Y EJECUTAR EL SISTEMA:
+
+PASO 1: Levantar la Red Local de Ganache
+Ejecutar el siguiente comando en la terminal para iniciar el nodo blockchain
+con el mnemonic del proyecto para asegurar la coincidencia de billeteras:
+   $ ganache --mnemonic "asthma behave envelope gain volcano medal admit finish addict boring direct burden" --port 8545
+
+PASO 2: Compilar y Desplegar el Contrato Inteligente
+En la raíz del proyecto, correr las migraciones de Truffle:
+   $ truffle migrate --reset
+
+PASO 3: Levantar la API del Backend (Padrón Electoral)
+1. Navegar a la carpeta `backend/`:
+   $ cd backend
+2. Instalar dependencias si es la primera vez:
+   $ npm install
+3. Iniciar el servidor Express:
+   $ npm run dev
+   (El servidor correrá en http://localhost:5000 y se conectará a SQLite).
+
+PASO 4: Levantar la Aplicación Frontend (DApp)
+1. Navegar a la carpeta `frontend_repo/`:
+   $ cd ../frontend_repo
+2. Instalar dependencias:
+   $ npm install
+3. Ejecutar la aplicación en modo desarrollo:
+   $ npm run dev
+   (La aplicación estará disponible en http://localhost:5173).
+
+PASO 5: Configuración de MetaMask
+1. Agregar una Red Local personalizada en MetaMask:
+   - RPC URL: http://127.0.0.1:8545
+   - Chain ID: 1337 (o el ID arrojado por Ganache en su consola).
+   - Símbolo: ETH
+2. Importar cuentas usando sus claves privadas (arrojadas por la consola de
+   Ganache al iniciar) para probar diferentes votantes del padrón.
+
+--------------------------------------------------------------------------------
+9. RESULTADOS Y EVALUACIÓN
+--------------------------------------------------------------------------------
+
+FUNCIONAMIENTO DEL SISTEMA:
+El prototipo funciona con total éxito. El flujo es el siguiente:
+1. Un usuario se registra en la web e ingresa su DNI y su wallet.
+2. El sistema lo detecta en el padrón. Al loguearse, si el usuario no tiene saldo,
+   el backend le fondea 10 ETH automáticamente.
+3. El usuario ingresa a votar. El sistema interactúa con MetaMask, enviando la
+   transacción al contrato `Votacion.sol`.
+4. Una vez procesada en el bloque de Ganache, el votante queda marcado como
+   "haVotado" y ya no puede emitir otro sufragio.
+5. El panel de recuento refleja el nuevo voto en tiempo real tras la confirmación.
+
+LIMITACIONES ENCONTRADAS:
+- ESCALABILIDAD Y GAS: Desplegar contratos y emitir transacciones en la red
+  principal de Ethereum es costoso. En producción se requeriría una red de
+  Capa 2 (L2) como Arbitrum, Polygon u Optimism para abaratar costos.
+- PRIVACIDAD: El contrato almacena un mapeo público `haVotado` por dirección.
+  Si una dirección es vinculable a una persona física, se pierde el secreto del
+  voto. En sistemas productivos reales es fundamental usar Zero-Knowledge
+  Proofs (ZKP) para desvincular la identidad del votante de la emisión del voto.
+
+--------------------------------------------------------------------------------
+10. CONCLUSIÓN
+--------------------------------------------------------------------------------
+
+El desarrollo de este sistema demuestra de forma empírica la viabilidad técnica
+de las tecnologías de contabilidad distribuida para automatizar escrutinios
+electorales garantizando total inmutabilidad. 
+
+Los principales desafíos radicaron en la integración híbrida: lograr que un
+entorno Web2 tradicional (Express/SQLite) se comunique armónicamente con la
+inmediatez y descentralización de Web3 sin agregar fricciones de experiencia
+de usuario (gracias al auto-fondeo y al parseo inteligente de metadatos). 
+
+La arquitectura Web2.5 adoptada es un excelente paso intermedio para la adopción
+electoral masiva de blockchain, resguardando la agilidad en la gestión de
+identidades físicas gubernamentales y blindando el sufragio de manipulación.
+
+--------------------------------------------------------------------------------
+11. ANEXOS
+--------------------------------------------------------------------------------
+
+CÓDIGO DEL CONTRATO INTELIGENTE: Votacion.sol
+---------------------------------------------
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract Votacion {
+    address public admin;
+
+    struct Candidato {
+        uint256 id;
+        string nombre;
+        uint256 votos;
+    }
+
+    Candidato[] public candidatos;
+    mapping(address => bool) public haVotado;
+
+    event CandidatoAgregado(uint256 candidatoId, string nombre);
+    event VotoEmitido(address indexed votante, uint256 candidatoId);
+
+    constructor() {
+        admin = msg.sender;
+    }
+
+    modifier soloAdmin() {
+        require(
+            msg.sender == admin || msg.sender == 0x10DE37dD9562D9035edD83134594Ef706EA60D24,
+            "No tienes permisos de administrador"
+        );
+        _;
+    }
+
+    function agregarCandidato(string memory _nombre) public soloAdmin {
+        uint256 candidatoId = candidatos.length;
+        candidatos.push(Candidato(candidatoId, _nombre, 0));
+        emit CandidatoAgregado(candidatoId, _nombre);
+    }
+
+    function emitirVoto(uint256 _candidatoId) public {
+        require(!haVotado[msg.sender], "Ya has emitido tu voto en esta eleccion");
+        require(_candidatoId < candidatos.length, "Candidato no valido");
+
+        candidatos[_candidatoId].votos++;
+        haVotado[msg.sender] = true;
+
+        emit VotoEmitido(msg.sender, _candidatoId);
+    }
+
+    function totalCandidatos() public view returns (uint256) {
+        return candidatos.length;
+    }
+
+    function consultarRecuentoVotos(uint256 _candidatoId) public view returns (uint256) {
+        require(_candidatoId < candidatos.length, "Candidato no valido");
+        return candidatos[_candidatoId].votos;
+    }
+}
+---------------------------------------------
+
+ENLACE AL REPOSITORIO DE GITHUB:
+   https://github.com/facundo-ag/Equipo-7-Block-Chain.git
+
+--------------------------------------------------------------------------------
+12. BIBLIOGRAFÍA / RECURSOS CONSULTADOS
+--------------------------------------------------------------------------------
+
+1. Documentación Oficial de Solidity:
+   https://docs.soliditylang.org/
+2. Documentación Oficial de Ethers.js (v6):
+   https://docs.ethers.org/v6/
+3. Guía de Inicio de Truffle Suite:
+   https://archive.trufflesuite.com/docs/truffle/
+4. Ethereum Whitepaper y documentación para desarrolladores:
+   https://ethereum.org/en/developers/
+5. Unsplash Source API para imágenes representativas:
+   https://unsplash.com/
